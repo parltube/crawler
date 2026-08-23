@@ -10,9 +10,11 @@ public class CrawlQueue
     
 }
 
-public class CrawlerContext : DbContext
+
+
+public class CrawlerDbContext : DbContext
 {
-    public CrawlerContext(DbContextOptions options) : base(options) { } 
+    public CrawlerDbContext(DbContextOptions options) : base(options) { } 
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -66,4 +68,4 @@ internal sealed class NullableUtcDateTimeConverter : ValueConverter<DateTime?, D
     {
         
     }
-}
+}   

@@ -131,3 +131,15 @@ $RECYCLE.BIN/
 .DS_Store
 
 _NCrunch*
+# --- секреты ---
+.env
+!.env.dist
+appsettings.json
+appsettings.*.json
+!appsettings.Example.json
+infra/wireguard/*.conf
+infra/wireguard/*.key
+cookies/*
+!cookies/README.md
+data/
+*.jsonl
