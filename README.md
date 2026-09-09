@@ -1,6 +1,32 @@
 # crawler
 crawler of youtube has a anti timeout, proxy usage, and etc. in it. mainly it gets metadata, comments, views and etc. 
 
+## Layout
+
+Follows [golang-standards/project-layout](https://github.com/golang-standards/project-layout) (bare minimum):
+
+```
+cmd/crawler/      — точка входа (main)
+internal/         — приватный код приложения (app, config)
+pkg/              — код, пригодный для внешнего импорта
+api/              — схемы/контракты (protobuf, OpenAPI, JSON schema)
+configs/          — файлы конфигурации / шаблоны
+scripts/          — вспомогательные скрипты (build, install, analysis)
+build/package/    — Dockerfile и упаковка
+deployments/      — docker-compose, wireguard, prometheus, grafana, promtail
+test/             — внешние тестовые данные и e2e
+```
+
+## Quick start
+
+```sh
+cp .env.dist .env
+make run      # go run ./cmd/crawler
+make build    # -> bin/crawler
+make test
+make docker   # build/package/Dockerfile
+```
+
 # arch 
 
 Буду писать на русском
@@ -12,7 +38,7 @@ crawler of youtube has a anti timeout, proxy usage, and etc. in it. mainly it ge
 РасДанные - расшеренные данные про видео + канал 
 
 Сервер 1: Kimsufi KS-1-B (~$15/мес, 8 ТБ HDD, 32 ГБ RAM)
-├── PostgreSQL (данные + очереди)
+├── Clickhouse (данные + очереди)
 ├── Redis (кэш, maxmemory 2 ГБ)
 ├── Manticore (поисковый индекс, Tier 1-2 в RAM, ~6 ГБ)
 ├── Storage + Services — один C# модульный монолит
