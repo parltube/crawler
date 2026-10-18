@@ -31,3 +31,5 @@ go.work.sum
 .vscode/
 # Build output
 bin/
+
+deployments/wireguard/keys.txt

@@ -11,6 +11,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/crispyLL/parltube-crawler/internal/config"
 )
 
 type BatchedStorage[T any] struct {
@@ -18,10 +19,10 @@ type BatchedStorage[T any] struct {
 	interval     time.Duration
 	adder        chan T
 	currentSql   string
-	MaxBatchSize uint
+	MaxBatchSize int
 }
 
-func NewBatchedStorage[T any](maxBatchSize uint) (*BatchedStorage[T], error) {
+func NewChConnection(config *config.Config) (driver.Conn, error) {
 	var (
 		ctx       = context.Background()
 		conn, err = clickhouse.Open(&clickhouse.Options{
@@ -58,10 +59,15 @@ func NewBatchedStorage[T any](maxBatchSize uint) (*BatchedStorage[T], error) {
 		}
 		return nil, err
 	}
+
+	return conn, nil
+}
+
+func NewBatchedStorage[T any](connection driver.Conn, config *config.Config) *BatchedStorage[T] {
 	return &BatchedStorage[T]{
-		connection: conn,
-		adder:      make(chan T, maxBatchSize),
-	}, nil
+		connection: connection,
+		adder:      make(chan T, config.BatchSize),
+	}
 }
 
 // collects data into the bulk asynchronusly inserts to keep clootting the disk with small inserts clickhouse, every 20-30 seconds.
@@ -70,14 +76,8 @@ func (stor *BatchedStorage[T]) Insert(data T, query string) {
 	stor.adder <- data
 }
 
-func (stor *BatchedStorage[T]) Run(ctx context.Context) {
-
-}
-
-func (b *Batcher[T]) Add(v T) { b.in <- v }
-
-func (b *Batcher[T]) Run(ctx context.Context) {
-	buf := make([]T, 0, b.maxRows)
+func (b *BatchedStorage[T]) Run(ctx context.Context) {
+	buf := make([]T, 0, b.MaxBatchSize)
 	t := time.NewTicker(b.interval)
 	defer t.Stop()
 
@@ -89,16 +89,16 @@ func (b *Batcher[T]) Run(ctx context.Context) {
 		fctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		if err := b.send(fctx, buf); err != nil {
-			log.Printf("flush %s: %v (dropped %d rows)", b.query, err, len(buf))
+			log.Printf("flush %s: %v (dropped %d rows)", b.currentSql, err, len(buf))
 		}
 		buf = buf[:0]
 	}
 
 	for {
 		select {
-		case v := <-b.in:
+		case v := <-b.adder:
 			buf = append(buf, v)
-			if len(buf) >= b.maxRows {
+			if len(buf) >= b.MaxBatchSize {
 				flush()
 			}
 		case <-t.C:
@@ -107,7 +107,7 @@ func (b *Batcher[T]) Run(ctx context.Context) {
 			// дочитать то, что уже в канале, и сбросить
 			for {
 				select {
-				case v := <-b.in:
+				case v := <-b.adder:
 					buf = append(buf, v)
 				default:
 					flush()
@@ -118,8 +118,8 @@ func (b *Batcher[T]) Run(ctx context.Context) {
 	}
 }
 
-func (b *Batcher[T]) send(ctx context.Context, rows []T) error {
-	batch, err := b.conn.PrepareBatch(ctx, b.query)
+func (b *BatchedStorage[T]) send(ctx context.Context, rows []T) error {
+	batch, err := b.connection.PrepareBatch(ctx, b.currentSql)
 	if err != nil {
 		return err
 	}

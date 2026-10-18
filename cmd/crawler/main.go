@@ -8,8 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/crispyLL/parltube-crawler/internal/app"
 	"github.com/crispyLL/parltube-crawler/internal/config"
+	"github.com/crispyLL/parltube-crawler/internal/crawler"
+	"github.com/crispyLL/parltube-crawler/internal/proxy"
 )
 
 func main() {
@@ -25,7 +26,16 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := app.Run(ctx, cfg, logger); err != nil {
+	proxy, err := proxy.NewRevolvingProxy(cfg)
+
+	if err != nil {
+		logger.Error("Error loading proxies", "err", err)
+		os.Exit(1)
+	}
+
+	crawler, err := crawler.NewCrawler(1, proxy)
+
+	if err := crawler.Run(ctx, cfg); err != nil {
 		logger.Error("run", "err", err)
 		os.Exit(1)
 	}

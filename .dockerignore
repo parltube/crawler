@@ -35,3 +35,7 @@ gin-bin
 *.out
 .idea/
 .vscode/
+
+# maintanance 
+logs/
+raw/

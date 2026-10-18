@@ -2,45 +2,39 @@
 package config
 
 import (
-	"fmt"
-	"os"
-	"strconv"
+	"log/slog"
+
+	"github.com/caarlos0/env/v11"
+	"github.com/joho/godotenv"
 )
+
+type LoggingConfig struct {
+	LoggingLevel slog.Level `env:"LOGGING_LEVEL"`
+}
 
 // Config holds all crawler settings.
 type Config struct {
-	DatabaseURL       string
-	WorkerConcurrency int
-	BatchSize         int
+	DatabaseURL       string `env:"DATABASE_URL",required,notEmpty`
+	WorkerConcurrency int    `env:"WORKER_CONCURRENCY" envDefault:"10"`
+	BatchSize         int    `env:"BATCH_SIZE" envDefault:"100"`
+	ProxyCount        int    `env:"PROXY_COUNT" envDefault:"1"`
+	ExportRaw         bool   `env:"EXPORT_RAW" envDefault:"false"`
+	Debug             bool   `env:"DEBUG" envDefault:"false"`
+	LoggingConfig     `envPrefix:"LOG_"`
 }
 
 // Load reads the configuration from environment variables.
 func Load() (*Config, error) {
-	cfg := &Config{
-		DatabaseURL:       getenv("DATABASE_URL", ""),
-		WorkerConcurrency: getenvInt("WORKER_CONCURRENCY", 10),
-		BatchSize:         getenvInt("BATCH_SIZE", 50),
+	err := godotenv.Load()
+	if err != nil {
+		return nil, err
 	}
 
-	if cfg.DatabaseURL == "" {
-		return nil, fmt.Errorf("config: DATABASE_URL is required")
+	cfg, err := env.ParseAs[Config]()
+
+	if err != nil {
+		return nil, err
 	}
 
-	return cfg, nil
-}
-
-func getenv(key, fallback string) string {
-	if v, ok := os.LookupEnv(key); ok && v != "" {
-		return v
-	}
-	return fallback
-}
-
-func getenvInt(key string, fallback int) int {
-	if v, ok := os.LookupEnv(key); ok {
-		if n, err := strconv.Atoi(v); err == nil {
-			return n
-		}
-	}
-	return fallback
+	return &cfg, nil
 }

@@ -1,0 +1,72 @@
+{
+  "uid": "parltube-crawler",
+  "title": "Crawler",
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "type": "stat", "title": "Crawler up",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "count(container_last_seen{container_label_com_docker_compose_service=\"crawler\"})" }]
+    },
+    {
+      "type": "stat", "title": "Host CPU %",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent" } },
+      "targets": [{ "expr": "100 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100" }]
+    },
+    {
+      "type": "stat", "title": "Host memory used %",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent" } },
+      "targets": [{ "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)" }]
+    },
+    {
+      "type": "stat", "title": "Disk free /",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [{ "expr": "node_filesystem_avail_bytes{mountpoint=\"/\"}" }]
+    },
+    {
+      "type": "timeseries", "title": "Error log lines / min",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{ "expr": "sum by (service) (count_over_time({service=\"crawler\"} |~ \"(?i)error|panic\" [1m]))", "legendFormat": "{{service}}" }]
+    },
+    {
+      "type": "timeseries", "title": "Crawler CPU (cores)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"crawler\"}[1m]))", "legendFormat": "{{name}}" }]
+    },
+    {
+      "type": "timeseries", "title": "Crawler memory",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [{ "expr": "sum by (name) (container_memory_working_set_bytes{container_label_com_docker_compose_service=\"crawler\"})", "legendFormat": "{{name}}" }]
+    },
+    {
+      "type": "timeseries", "title": "Tunnel traffic (rx / tx)",
+      "description": "All worker traffic goes through the vpn container's SOCKS5 tunnels",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "Bps" } },
+      "targets": [
+        { "expr": "sum by (name) (rate(container_network_receive_bytes_total{container_label_com_docker_compose_service=\"vpn\"}[1m]))", "legendFormat": "rx {{name}}" },
+        { "expr": "-sum by (name) (rate(container_network_transmit_bytes_total{container_label_com_docker_compose_service=\"vpn\"}[1m]))", "legendFormat": "tx {{name}}" }
+      ]
+    },
+    {
+      "type": "logs", "title": "Crawler logs",
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 12 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{ "expr": "{service=~\"crawler|vpn\"}" }]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+services:
+  # N Mullvad WG tunnels (one per line of keys.txt) -> socks5://vpn:1080..1080+N-1
+  # New IP for tunnel i: GET http://vpn:8080/cgi-bin/rotate?<i>
+  vpn:
+    build: deployments/vpn
+    volumes:
+      - ./deployments/wireguard:/etc/wireguard:ro
+      - proxies:/run/proxies
+
+  crawler:
+    build:
+      context: .
+      dockerfile: build/package/Dockerfile
+    depends_on: [vpn]
+    env_file: .env
+    environment:
+      PROXY_LIST: /run/proxies/list
+    volumes:
+      - ./cookies:/cookies:ro
+      - proxies:/run/proxies:ro
+
+  # --- Monitoring: Alloy collects host/container metrics + logs ---
+  alloy:
+    image: grafana/alloy:v1.10.0
+    privileged: true
+    pid: host
+    command: [run, /etc/alloy/config.alloy, --storage.path=/var/lib/alloy]
+    volumes:
+      - ./deployments/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/rootfs:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command: [--web.enable-remote-write-receiver, --config.file=/etc/prometheus/prometheus.yml]
+    volumes:
+      - prometheus-data:/prometheus
+
+  loki:
+    image: grafana/loki:3.5.0
+    volumes:
+      - loki-data:/loki
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - ./deployments/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  proxies:
+  prometheus-data:
+  loki-data:
+  grafana-data:
