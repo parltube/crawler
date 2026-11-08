@@ -14,9 +14,7 @@ curl -fsS https://api.mullvad.net/public/relays/wireguard/v2 \
 tunnel() {
   i=$1 key=$2 addr=$3
   while :; do
-    read -r ip pub <<EOF
-$(shuf -n1 "$RELAYS")
-EOF
+    set -- $(shuf -n1 "$RELAYS"); ip=$1 pub=$2
     cat > "/tmp/wg$i.conf" <<EOF
 [Interface]
 PrivateKey = $key
