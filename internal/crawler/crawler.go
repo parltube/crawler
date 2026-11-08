@@ -23,9 +23,11 @@ type CrawlerContext struct {
 	CommentsStorage *storage.BatchedStorage[structs.CommentsMetadata]
 	VideoMetaData   *storage.BatchedStorage[structs.VideoMetaData]
 	ChannelMetadata *storage.BatchedStorage[structs.ChannelMetadata]
-	PlayerMetadata  *storage.BatchedStorage[structs.PlayerMetadata]
+	PlayerMetadata  *storage.BatchedStorage[structs.YtPlayerMetadata]
 	BrowseMetadata  *storage.BatchedStorage[structs.BrowseMetadata]
-	CrawlState      *storage.CrawlState
+	CrawlStorage    *storage.CrawlStateStorage
+	// loopback channel to send from this channel to themselves
+	CrawlingIdChannel chan structs.ContentId
 }
 
 func NewCrawlerContext(proxy proxy.IRevolvingProxy, conn driver.Conn, cfg *config.Config) *CrawlerContext {
@@ -34,7 +36,7 @@ func NewCrawlerContext(proxy proxy.IRevolvingProxy, conn driver.Conn, cfg *confi
 		CommentsStorage:   storage.NewBatchedStorage[structs.CommentsMetadata](conn, cfg),
 		VideoMetaData:     storage.NewBatchedStorage[structs.VideoMetaData](conn, cfg),
 		ChannelMetadata:   storage.NewBatchedStorage[structs.ChannelMetadata](conn, cfg),
-		PlayerMetadata:    storage.NewBatchedStorage[structs.PlayerMetadata](conn, cfg),
+		PlayerMetadata:    storage.NewBatchedStorage[structs.YtPlayerMetadata](conn, cfg),
 		BrowseMetadata:    storage.NewBatchedStorage[structs.BrowseMetadata](conn, cfg),
 	}
 }

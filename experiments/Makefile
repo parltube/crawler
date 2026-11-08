@@ -11,12 +11,16 @@ FLAGS = --label $(LABEL) $(if $(QUICK),--quick) $(if $(IDS),--ids $(IDS)) $(ARGS
 
 PROBES = watch browse player comments
 
-.PHONY: help install sanity integrity all $(PROBES)
+.PHONY: help install sanity integrity all streamcut $(PROBES)
 
 help:
-	@echo "targets: install sanity $(PROBES) integrity all"
+	@echo "targets: install sanity $(PROBES) integrity all streamcut"
 	@echo "vars:    LABEL=name QUICK=1 IDS=ids.txt PAUSE=15 ARGS='--conc 16'"
 	@echo "e.g.:    make watch LABEL=isp-tun QUICK=1"
+	@echo "         make streamcut ARGS='-n 10 -need player -targets watch:dQw4w9WgXcQ,channel:@MrBeast'"
+
+streamcut:
+	go run ./streamcut $(ARGS)
 
 install:
 	$(PY) -m pip install curl_cffi

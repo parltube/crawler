@@ -1,6 +1,21 @@
 package structs
 
-import "time"
+import (
+	"time"
+)
+
+type ContentType string
+type PlatformType string
+
+const (
+	Youtube PlatformType = "YOUTUBE"
+)
+
+const (
+	Video   ContentType = "VIDEO"
+	Channel ContentType = "CHANNEL"
+	Shorts  ContentType = "SHORTS"
+)
 
 // base type for metadata, timestamp and generics interface
 type BasicType struct {
@@ -20,11 +35,15 @@ type CommentsMetadata struct {
 	BasicType
 }
 
-// player metdata mostly?
-type PlayerMetadata struct {
-	BasicType
+//
+type BrowseMetadata struct {
+	LastCrawledAt time.Time
+	LastChannelId ContentId
+	WorkerType WorkerType
 }
 
-type BrowseMetadata struct {
-	BasicType
+type ContentId struct {
+	Id       string      // tenant pattern
+	Type     ContentType // блять сука ебал нету нахуй enum-амов.
+	Platform PlatformType
 }
